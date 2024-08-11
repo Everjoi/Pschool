@@ -1,0 +1,101 @@
+﻿@page "/add-student"
+@using Pschool.Application.CQRS.StudentFolder.Commands.CreateStudent
+@using Pschool.Application.DTOs
+@using Pschool.Shared.Results
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationPage
+
+
+<h3>Add Student</h3>
+
+<EditForm Model="@Student" OnValidSubmit="@HandleValidSubmit" FormName="AddStudentForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="Name">Name:</label>
+        <InputText id="Name" class="form-control" @bind-Value="Student.Name" />
+    </div>
+
+    <div class="form-group">
+        <label for="Surname">Surname:</label>
+        <InputText id="Surname" class="form-control" @bind-Value="Student.Surname" />
+    </div>
+
+    <div class="form-group">
+        <label for="LastName">LastName:</label>
+        <InputText id="LastName" class="form-control" @bind-Value="Student.LastName" />
+    </div>
+
+    <div class="form-group">
+        <label for="DateOfBirth">DateOfBirth:</label>
+        <InputDate id="DateOfBirth" class="form-control" @bind-Value="Student.DateOfBirth" />
+    </div>
+
+    <div class="form-group">
+        <label for="Gender">Gender:</label>
+        <InputText id="Gender" class="form-control" @bind-Value="Student.Gender" />
+    </div>
+    
+    <div class="form-group">
+        <label for="EnrollmentDate">EnrollmentDate:</label>
+        <InputDate id="EnrollmentDate" class="form-control" @bind-Value="Student.EnrollmentDate" />
+    </div>
+
+    <div class="form-group">
+        <label for="Grade">Grade:</label>
+        <InputText id="Grade" class="form-control" @bind-Value="Student.Grade" />
+    </div>
+
+    <div class="form-group">
+        <label for="Parent">Parent:</label>
+        <InputSelect id="Parent" class="form-control" @bind-Value="Student.ParentId">
+            <option value="">Select a parent</option>
+            @foreach (var parent in Parents)
+            {
+                <option value="@parent.Id">@parent.Name @parent.Surname</option>
+            }
+        </InputSelect>
+    </div>
+
+
+    <button type="submit" class="btn btn-primary">Add Student</button>
+</EditForm>
+
+@code {
+
+    [SupplyParameterFromForm]
+    public CreateStudentCommand Student { get; set; } = new CreateStudentCommand { Name = string.Empty, Surname = string.Empty, DateOfBirth = default };
+
+    [Inject] private HttpClient Http { get; set; } = new();
+
+    private List<ParentDto> Parents { get; set; } = new List<ParentDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadParents();
+    }
+
+    private async Task LoadParents()
+    {
+        var parentsResult = await HttpClient.GetFromJsonAsync<Result<List<ParentDto>>>("api/parents");
+        var response = parentsResult.Data;
+        if (response != null)
+        {
+            Parents = response;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var response = await Http.PostAsJsonAsync("api/student", Student);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationPage.NavigateTo("/students");
+        }
+        else
+        {
+            NavigationPage.NavigateTo("/Error");
+        }
+    }
+}

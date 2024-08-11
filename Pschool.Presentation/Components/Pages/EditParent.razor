@@ -1,0 +1,113 @@
+﻿@page "/edit-parent/{Id:guid}"
+@using Pschool.Application.CQRS.ParentFolder.Commands.CreateParent
+@using Pschool.Application.DTOs
+@using Pschool.Domain.Entities
+@using Pschool.Shared.Results
+@inject NavigationManager NavigationPage
+
+
+<h3>Edit Parent</h3>
+
+<EditForm Model="@Parent" OnValidSubmit="@HandleValidSubmit" FormName="EditParentForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="Name">Name:</label>
+        <InputText id="Name" class="form-control" @bind-Value="Parent.Name"/>  
+    </div>
+
+    <div class="form-group">
+        <label for="Surname">Surname:</label>
+        <InputText id="Surname" class="form-control" @bind-Value="Parent.Surname"/>
+    </div>
+
+    <div class="form-group">
+        <label for="LastName">LastName:</label>
+        <InputText id="LastName" class="form-control" @bind-Value="Parent.LastName" />
+    </div>
+
+    <div class="form-group">
+        <label for="PhoneNumber">PhoneNumber:</label>
+        <InputText id="PhoneNumber" class="form-control" @bind-Value="Parent.PhoneNumber" />
+    </div>
+
+    <div class="form-group">
+        <label for="Email">Email:</label>
+        <InputText id="Email" class="form-control" @bind-Value="Parent.Email" />
+    </div>
+
+    <div class="form-group">
+        <label for="Address">Address:</label>
+        <InputText id="Address" class="form-control" @bind-Value="Parent.Address" />
+    </div>
+
+    <div class="form-group">
+        <label for="Occupation">Occupation:</label>
+        <InputText id="Occupation" class="form-control" @bind-Value="Parent.Occupation" />
+    </div>
+
+    <div class="form-group">
+        <label for="DateOfBirth">DateOfBirth:</label>
+        <InputDate id="DateOfBirth" class="form-control" @bind-Value="Parent.DateOfBirth" />
+    </div>
+
+    <div class="form-group">
+        <label for="Gender">Gender:</label>
+        <InputText id="Gender" class="form-control" @bind-Value="Parent.Gender" />
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Edit Parent</button>
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public Parent Parent { get; set; } = new();
+
+    [Inject] private HttpClient Http { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    public Parent LoadedParent { get; set; } = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadParent(Id);
+        StateHasChanged();
+    }
+
+    private async Task LoadParent(Guid id)
+    {
+        var response = await Http.PostAsJsonAsync("/api/getParent", id);
+        if (response.IsSuccessStatusCode)
+        {
+            var parentResult = await response.Content.ReadFromJsonAsync<Result<Parent>>();
+            var parent = parentResult?.Data;
+
+            if(parent != null)
+            {
+                LoadedParent = parent;
+            }
+        }
+    }
+
+
+    private async Task HandleValidSubmit()
+    {
+        StateHasChanged();
+        Parent.Id = LoadedParent.Id;
+        var response = await Http.PostAsJsonAsync("api/updateParent", Parent);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationPage.NavigateTo("/parents");
+        }
+        else
+        {
+            NavigationPage.NavigateTo("/Error");
+        }
+    }
+}

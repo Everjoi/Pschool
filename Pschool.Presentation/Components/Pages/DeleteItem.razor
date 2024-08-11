@@ -1,0 +1,19 @@
+﻿@page "/record-deleted/{ItemName}"
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Record Deleted</h3>
+
+<p>The record has been successfully deleted.</p>
+
+<button class="btn btn-primary" @onclick="GoBack">Go Back</button>
+
+@code {
+    [Parameter]
+    public string ItemName { get; set; } = "";
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/{ItemName}");
+    }
+}

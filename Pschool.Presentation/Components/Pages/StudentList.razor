@@ -1,0 +1,199 @@
+﻿@* @page "/students"
+@using Pschool.Application.DTOs
+@using System.Net.Http.Json
+@using Pschool.Shared.Results
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationPage
+@rendermode InteractiveServer
+
+<h3>Students</h3>
+<select @onchange="FilterByParent">
+    <option value="">All Parents</option>
+    @foreach (var parent in Parents)
+    {
+        <option value="@parent.Id">@parent.Name</option>
+    }
+</select>
+<button @onclick="AddStudent">Add Student</button>
+<table class="table">
+    <thead>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Parent</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var student in Students)
+        {
+            <tr>
+                <td>@student.Name</td>
+                <td>@student.Surname</td>
+                <td>@student.Grade</td>
+                <td>@student.Parent</td>
+                <td>
+                    <button @onclick="() => EditStudent(student.Id)">Edit</button>
+                    <button @onclick="() => DeleteStudent(student.Id)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<StudentDto> Students = new List<StudentDto>();
+    private List<ParentDto> Parents = new List<ParentDto>();
+    [Inject] private HttpClient Http { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var parentsResult = await HttpClient.GetFromJsonAsync<Result<List<ParentDto>>>("api/parents");
+        Parents = parentsResult.Data;
+
+        var studentsResult = await HttpClient.GetFromJsonAsync <Result<List<StudentDto>>>("api/students");
+        Students = studentsResult.Data;
+
+    }
+
+    private void AddStudent()
+    {
+        NavigationPage.NavigateTo("/add-student");
+    }
+
+    private void EditStudent(Guid id)
+    {
+        NavigationPage.NavigateTo($"/edit-student/{id}");
+    }
+
+    private async Task DeleteStudent(Guid id)
+    {
+        var response = await Http.PostAsJsonAsync("/api/delete-student", id);
+        NavigationPage.NavigateTo("/record-deleted/students");
+    }
+
+    private async  Task  FilterByParent(ChangeEventArgs e)
+    {
+        var parentId = e.Value.ToString();
+        if (string.IsNullOrEmpty(parentId))
+        {
+            Students = await HttpClient.GetFromJsonAsync<List<StudentDto>>("api/students");
+        }
+        else
+        {
+            Students = await HttpClient.GetFromJsonAsync<List<StudentDto>>($"api/students/getByParentId?parentId={parentId}");
+            Console.WriteLine(Students.Count);
+        }
+    }
+}
+ *@
+
+@page "/students"
+@using Pschool.Application.DTOs
+@using System.Net.Http.Json
+@using Pschool.Shared.Results
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationPage
+@rendermode InteractiveServer
+
+<h3>Students</h3>
+<select @onchange="FilterByParent">
+    <option value="">All Parents</option>
+    @foreach (var parent in Parents)
+    {
+        <option value="@parent.Id">@parent.Name</option>
+    }
+</select>
+<button @onclick="AddStudent">Add Student</button>
+<table class="table">
+    <thead>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Parent</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Students != null && Students.Any())
+        {
+            @foreach (var student in Students)
+            {
+                <tr>
+                    <td>@student.Name</td>
+                    <td>@student.Surname</td>
+                    <td>@student.Grade</td>
+                    <td>@student.Parent</td>
+                    <td>
+                        <button @onclick="() => EditStudent(student.Id)">Edit</button>
+                        <button @onclick="() => DeleteStudent(student.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="5">No students found.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<StudentDto> Students = new List<StudentDto>();
+    private List<ParentDto> Parents = new List<ParentDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadParents();
+        await LoadStudents();
+    }
+
+    private async Task LoadParents()
+    {
+        var parentsResult = await HttpClient.GetFromJsonAsync<Result<List<ParentDto>>>("api/parents");
+        Parents = parentsResult.Data;
+    }
+
+    private async Task LoadStudents()
+    {
+        var studentsResult = await HttpClient.GetFromJsonAsync<Result<List<StudentDto>>>("api/students");
+        Students = studentsResult.Data;
+    }
+
+    private void AddStudent()
+    {
+        NavigationPage.NavigateTo("/add-student");
+    }
+
+    private void EditStudent(Guid id)
+    {
+        NavigationPage.NavigateTo($"/edit-student/{id}");
+    }
+
+    private async Task DeleteStudent(Guid id)
+    {
+        var response = await HttpClient.PostAsJsonAsync("/api/delete-student", id);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationPage.NavigateTo("/record-deleted/students");
+        }
+    }
+
+    private async Task FilterByParent(ChangeEventArgs e)
+    {
+        var parentId = e.Value.ToString();
+        if (string.IsNullOrEmpty(parentId))
+        {
+            await LoadStudents(); 
+        }
+        else
+        {
+            var studentsResult = await HttpClient.GetFromJsonAsync<Result<List<StudentDto>>>($"api/students/getByParentId?parentId={parentId}");
+            Students = studentsResult.Data;
+        }
+    }
+}
